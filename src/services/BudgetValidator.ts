@@ -1,33 +1,38 @@
-import { FinancialService } from "../thirdparty/FinancialService";
-import { IProducingService } from "../movie/interfaces/IDelegates";
-import { IStaffInformation } from "../staff/IStaffInformation";
-import { StudioStaff } from "../staff/StudioStaff";
 import { InsufficientBudgetException } from "../thirdparty/InsufficientBudgetException";
+import { BudgetValidationContext } from "./BudgetValidationContext";
 
+/**
+ * Single-argument validate() reduces the fat-method ISP violation.
+ * New validation rules can be added via composition (CompositeBudgetValidator)
+ * without modifying existing validators (OCP).
+ */
 export interface BudgetValidator {
-    validate(daysInProduction: number,
-             movieStaff: StudioStaff,
-             financialService: FinancialService,
-             staffingService: IStaffInformation,
-             producingService: IProducingService): void;
+    validate(context: BudgetValidationContext): void;
 }
 
 export class DefaultBudgetValidator implements BudgetValidator {
-    validate(
-        daysInProduction: number,
-        movieStaff: StudioStaff,
-        financialService: FinancialService,
-        staffingService: IStaffInformation,
-        producingService: IProducingService
-    ): void {
-        if (!producingService.canBeProduced(
-            financialService.getBudget(),
-            daysInProduction,
-            staffingService,
-            movieStaff
+    validate(context: BudgetValidationContext): void {
+        if (!context.producingService.canBeProduced(
+            context.financialService.getBudget(),
+            context.daysInProduction,
+            context.staffingService,
+            context.movieStaff
         )) {
-            // keep the same exception type as previous implementation
             throw new InsufficientBudgetException('Movie cannot be produced - budget is insufficient');
+        }
+    }
+}
+
+/**
+ * Composite validator: runs multiple validators in sequence.
+ * Allows new validation rules to be added without modifying existing ones (OCP).
+ */
+export class CompositeBudgetValidator implements BudgetValidator {
+    constructor(private readonly validators: BudgetValidator[]) {}
+
+    validate(context: BudgetValidationContext): void {
+        for (const validator of this.validators) {
+            validator.validate(context);
         }
     }
 }

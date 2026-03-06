@@ -5,6 +5,8 @@ import { IMovieStudioServices } from './interfaces/IMovieStudioServices';
 import { ProductionOrchestrator } from './ProductionOrchestrator';
 import { MovieStatisticsCoordinator } from './MovieStatisticsCoordinator';
 import { BudgetCalculationService } from './services/BudgetCalculationService';
+import { DefaultMovieProductionServiceFactory } from './interfaces/IMovieProductionServiceFactory';
+import { DefaultMoviePrintServiceFactory, DefaultArchivePrintServiceFactory } from './interfaces/IPrintServiceFactories';
 
 const INITIAL_BUDGET = 1000000;
 
@@ -18,12 +20,17 @@ export class MovieStudio {
     constructor(services?: IMovieStudioServices) {
         // allow a caller (or tests) to provide a custom set of services; otherwise use defaults
         this.movieStudioServiceMap = services ? services : createMovieStudioServicesInstance();
-        this.productionOrchestrator = new ProductionOrchestrator(this.movieStudioServiceMap);
+
+        const movieProductionServiceFactory = new DefaultMovieProductionServiceFactory(this.movieStudioServiceMap);
+        this.productionOrchestrator = new ProductionOrchestrator(this.movieStudioServiceMap, movieProductionServiceFactory);
+
         const budgetCalculator = new BudgetCalculationService(this.movieStudioServiceMap.financialService);
         this.movieStatisticsCoordinator = new MovieStatisticsCoordinator(
             this.movieStudioServiceMap,
             budgetCalculator,
-            INITIAL_BUDGET
+            INITIAL_BUDGET,
+            new DefaultMoviePrintServiceFactory(),
+            new DefaultArchivePrintServiceFactory()
         );
     }
 

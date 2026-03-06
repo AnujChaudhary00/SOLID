@@ -5,6 +5,7 @@ import { IStaffingService } from "./staff/IStaffingService";
 import { BudgetIsOverException } from "./thirdparty/BudgetIsOverException";
 import { FinancialService } from "./thirdparty/FinancialService";
 import { BudgetValidator } from "./services/BudgetValidator";
+import { BudgetValidationContext } from "./services/BudgetValidationContext";
 import { SalaryManager } from "./services/SalaryManager";
 import { StudioEmployee } from "./thirdparty/StudioEmployee";
 import { print } from "./utility/printUtility";
@@ -36,13 +37,14 @@ export class MovieProductionService {
     orchestrateProduction(movie: Movie, movieDefinition: MovieDefinition) {
         this.movieDefinition = movieDefinition;
 
-        this.budgetValidator.validate(
-            this.movieDefinition.getDaysInProduction(),
-            this.movieDefinition.getMovieStaff(),
-            this.financialService,
-            this.staffingService,
-            this.producingService
-        );
+        const validationContext: BudgetValidationContext = {
+            daysInProduction: this.movieDefinition.getDaysInProduction(),
+            movieStaff: this.movieDefinition.getMovieStaff(),
+            financialService: this.financialService,
+            staffingService: this.staffingService,
+            producingService: this.producingService,
+        };
+        this.budgetValidator.validate(validationContext);
         this.staffingService.hireNewStaffFromStudioStaff(this.movieDefinition.getMovieStaff());
         this.producingService.initMovieProduction(this.movieDefinition.getDaysInProduction());
         const finished = this.executeMovieDay();
@@ -74,7 +76,7 @@ export class MovieProductionService {
         return true;
     }
 
-    intialiseProduction(
+    initialiseProduction(
         INITIAL_BUDGET: number,
         recruiter: StudioEmployee,
         accountant: StudioEmployee
