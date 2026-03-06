@@ -1,38 +1,26 @@
-import { MoviePrintService } from './MoviePrintService';
-import { ArchivePrintService } from './ArchivePrintService';
 import { MovieDefinition } from './movie/MovieDefinition';
 import { IStatisticsServices } from './interfaces/IMovieStudioServices';
 import { IBudgetCalculator } from './services/IBudgetCalculator';
+import { IMoviePrintServiceFactory, IArchivePrintServiceFactory } from './interfaces/IPrintServiceFactories';
 
 export class MovieStatisticsCoordinator {
-    private services: IStatisticsServices;
-    private budgetCalculator: IBudgetCalculator;
-    private initialBudget: number;
-
-    constructor(services: IStatisticsServices, budgetCalculator: IBudgetCalculator, initialBudget: number) {
-        this.services = services;
-        this.budgetCalculator = budgetCalculator;
-        this.initialBudget = initialBudget;
-    }
+    constructor(
+        private services: IStatisticsServices,
+        private budgetCalculator: IBudgetCalculator,
+        private initialBudget: number,
+        private moviePrintServiceFactory: IMoviePrintServiceFactory,
+        private archivePrintServiceFactory: IArchivePrintServiceFactory
+    ) {}
 
     printProducedMovieStatistics(movieDefinition: MovieDefinition) {
-        this.createMoviePrintService(movieDefinition).printProducedMovieStatistics();
+        this.moviePrintServiceFactory
+            .create(movieDefinition, this.initialBudget, this.services.staffingService, this.budgetCalculator)
+            .printProducedMovieStatistics();
     }
 
     printMovieArchiveStatistics(movieDefinition: MovieDefinition) {
-        this.createArchivePrintService().printMovieArchiveStatistics();
-    }
-
-    private createMoviePrintService(movieDefinition: MovieDefinition): MoviePrintService {
-        return new MoviePrintService(
-            movieDefinition,
-            this.initialBudget,
-            this.services.staffingService,
-            this.budgetCalculator
-        );
-    }
-
-    private createArchivePrintService(): ArchivePrintService {
-        return new ArchivePrintService(this.services.archiveStatisticsService);
+        this.archivePrintServiceFactory
+            .create(this.services.archiveStatisticsService)
+            .printMovieArchiveStatistics();
     }
 }

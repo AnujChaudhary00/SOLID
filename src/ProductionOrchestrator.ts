@@ -1,14 +1,16 @@
 import { Movie } from './movie/Movie';
 import { MovieDefinition } from './movie/MovieDefinition';
-import { MovieProductionService } from './MovieProductionService';
 import { IProductionServices } from './interfaces/IMovieStudioServices';
-import { BudgetCalculationService } from './services/BudgetCalculationService';
+import { IMovieProductionServiceFactory } from './interfaces/IMovieProductionServiceFactory';
 
 const INITIAL_BUDGET = 1000000;
 
 
 export class ProductionOrchestrator {
-    constructor(private services: IProductionServices) {}
+    constructor(
+        private services: IProductionServices,
+        private movieProductionServiceFactory: IMovieProductionServiceFactory
+    ) {}
 
     /**
      * Execute the production of a movie with given definition and staff.
@@ -29,23 +31,15 @@ export class ProductionOrchestrator {
             movieDefinition.getMovieStaff()
         );
 
-        // Create MovieProductionService with all injected dependencies
-        const movieProductionService = new MovieProductionService(
-            movie,
-            movieDefinition,
-            this.services.financialService,
-            this.services.staffingService,
-            this.services.producingService,
-            this.services.budgetValidator,
-            this.services.salaryManager
-        );
+        // Use injected factory to create MovieProductionService (DIP)
+        const movieProductionService = this.movieProductionServiceFactory.create(movie, movieDefinition);
 
         // Create recruiter and accountant instances
         const recruiter = this.services.createRecruiter(recruiterName);
         const accountant = this.services.createAccountant(accountantName);
         
         // Initialize production with budget and staff
-        movieProductionService.intialiseProduction(INITIAL_BUDGET, recruiter, accountant);
+        movieProductionService.initialiseProduction(INITIAL_BUDGET, recruiter, accountant);
         
         // Execute the production
         movieProductionService.orchestrateProduction(movie, movieDefinition);
